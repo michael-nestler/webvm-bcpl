@@ -1,0 +1,24 @@
+FROM --platform=i386 i386/debian:buster as build
+
+WORKDIR /root
+
+RUN apt-get clean && apt-get update && apt-get -y upgrade
+RUN apt-get -y install gcc build-essential curl
+
+# Steps described in Chapter 12 in the BCP manual https://www.cl.cam.ac.uk/~mr10/bcplman.pdf
+RUN curl https://www.cl.cam.ac.uk/~mr10/BCPL/bcpl.tgz -o bcpl.tgz && mkdir -p distribution && tar zxvf bcpl.tgz -C distribution && rm bcpl.tgz
+RUN cd distribution/BCPL/cintcode && . ./os/linux/setbcplenv && make
+
+RUN useradd -m user && echo "user:password" | chpasswd
+WORKDIR /home/user/
+ENV HOME="/home/user" TERM="xterm" USER="user" SHELL="/bin/bash" EDITOR="vim" LANG="en_US.UTF-8" LC_ALL="C"
+RUN echo 'root:password' | chpasswd
+CMD [ "/bin/bash" ]
+
+
+# FROM --platform=i386 i386/busybox
+# 
+# COPY --from=build /root/distribution/BCPL/cintcode /root/distribution/BCPL/cintcode
+# RUN echo 'root:password' | chpasswd
+# # CMD . /root/distribution/BCPL/cintcode/os/linux/setbcplenv && cintsys
+# CMD [ "sh" ]
