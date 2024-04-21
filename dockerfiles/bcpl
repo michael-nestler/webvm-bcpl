@@ -9,16 +9,13 @@ RUN apt-get -y install gcc build-essential curl
 RUN curl https://www.cl.cam.ac.uk/~mr10/BCPL/bcpl.tgz -o bcpl.tgz && mkdir -p distribution && tar zxvf bcpl.tgz -C distribution && rm bcpl.tgz
 RUN cd distribution/BCPL/cintcode && . ./os/linux/setbcplenv && make
 
+FROM --platform=i386 i386/debian:buster
+
+# CMD . /root/distribution/BCPL/cintcode/os/linux/setbcplenv && cintsys
+
 RUN useradd -m user && echo "user:password" | chpasswd
 WORKDIR /home/user/
+COPY --from=build /root/distribution/BCPL/cintcode /home/user/distribution/BCPL/cintcode
 ENV HOME="/home/user" TERM="xterm" USER="user" SHELL="/bin/bash" EDITOR="vim" LANG="en_US.UTF-8" LC_ALL="C"
 RUN echo 'root:password' | chpasswd
 CMD [ "/bin/bash" ]
-
-
-# FROM --platform=i386 i386/busybox
-# 
-# COPY --from=build /root/distribution/BCPL/cintcode /root/distribution/BCPL/cintcode
-# RUN echo 'root:password' | chpasswd
-# # CMD . /root/distribution/BCPL/cintcode/os/linux/setbcplenv && cintsys
-# CMD [ "sh" ]
