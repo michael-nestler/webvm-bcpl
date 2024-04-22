@@ -288,8 +288,8 @@ __      __   _  __   ____  __
 	async function loadCX()
 	{
 		// Find the latest build
-		var r = await fetch("https://cheerpxdemos.leaningtech.com/publicdeploy/LATEST.txt");
-		var url = await r.text();
+		// var r = await fetch("https://cheerpxdemos.leaningtech.com/publicdeploy/LATEST.txt");
+		var url = "https://cheerpxdemos.leaningtech.com/publicdeploy/20230517_94/cx.js";
 		url = url.trim();
 		var script = document.createElement('script');
 		script.type = 'text/javascript';
