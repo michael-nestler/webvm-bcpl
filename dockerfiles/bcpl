@@ -6,16 +6,16 @@ RUN apt-get clean && apt-get update && apt-get -y upgrade
 RUN apt-get -y install gcc build-essential curl
 
 # Steps described in Chapter 12 in the BCP manual https://www.cl.cam.ac.uk/~mr10/bcplman.pdf
+# Additionally, I'm adding a '-m32' flag to gcc just to be sure the resulting binary is i386 compatible
 RUN curl https://www.cl.cam.ac.uk/~mr10/BCPL/bcpl.tgz -o bcpl.tgz && mkdir -p distribution && tar zxvf bcpl.tgz -C distribution && rm bcpl.tgz
 RUN cd distribution/BCPL/cintcode && . ./os/linux/setbcplenv && sed -i '1s/^/CFLAGS+=-m32 \n/' Makefile && cat Makefile && make
 
 FROM --platform=i386 i386/debian:buster
-
-# CMD . /root/distribution/BCPL/cintcode/os/linux/setbcplenv && cintsys
 
 RUN useradd -m user && echo "user:password" | chpasswd
 WORKDIR /home/user/
 COPY --from=build /root/distribution/BCPL/cintcode /home/user/distribution/BCPL/cintcode
 ENV HOME="/home/user" TERM="xterm" USER="user" SHELL="/bin/bash" EDITOR="vim" LANG="en_US.UTF-8" LC_ALL="C"
 RUN echo 'root:password' | chpasswd
-CMD [ "/bin/bash" ]
+RUN printf '#!/bin/sh\n. /home/user/distribution/BCPL/cintcode/os/linux/setbcplenv && cintsys $@' > /home/user/cintsys && chmod +x /home/user/cintsys
+ENTRYPOINT [ "/home/user/cintsys" ]
