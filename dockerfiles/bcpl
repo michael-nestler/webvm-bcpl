@@ -1,21 +1,24 @@
+ARG HOME=/root
+
 FROM --platform=i386 i386/debian:buster as build
 
-WORKDIR /root
+WORKDIR $HOME
 
 RUN apt-get clean && apt-get update && apt-get -y upgrade
 RUN apt-get -y install gcc build-essential curl
 
 # Steps described in Chapter 12 in the BCPL manual https://www.cl.cam.ac.uk/~mr10/bcplman.pdf
 # Additionally, I'm adding a '-m32' flag to gcc just to be sure the resulting binary is i386 compatible
-RUN curl https://www.cl.cam.ac.uk/~mr10/BCPL/bcpl.tgz -o bcpl.tgz && mkdir -p distribution && tar zxvf bcpl.tgz -C distribution && rm bcpl.tgz
-RUN cd distribution/BCPL/cintcode && . ./os/linux/setbcplenv && sed -i 's/march=native/march=pentium4/g' Makefile && cat Makefile && make clean && make
+RUN curl https://www.cl.cam.ac.uk/~mr10/BCPL/bcpl.tgz -o bcpl.tgz && mkdir -p $HOME/distribution && tar zxvf bcpl.tgz -C $HOME/distribution && rm bcpl.tgz
+RUN cd $HOME/distribution/BCPL/cintcode && . ./os/linux/setbcplenv && sed -i 's/march=native/march=pentium4/g' Makefile && make clean && make
 
 FROM --platform=i386 i386/debian:buster
 
-RUN useradd -m user && echo "user:password" | chpasswd
-WORKDIR /home/user/
-COPY --from=build /root/distribution/BCPL/cintcode /home/user/distribution/BCPL/cintcode
-ENV HOME="/home/user" TERM="xterm" USER="user" SHELL="/bin/bash" EDITOR="vim" LANG="en_US.UTF-8" LC_ALL="C"
+ARG HOME
+
+WORKDIR $HOME
+ENV HOME $HOME
+COPY --from=build $HOME/distribution/BCPL/cintcode $HOME/distribution/BCPL/cintcode
 RUN echo 'root:password' | chpasswd
-RUN printf '#!/bin/sh\n. /home/user/distribution/BCPL/cintcode/os/linux/setbcplenv && cintsys $@' > /home/user/cintsys && chmod +x /home/user/cintsys
-ENTRYPOINT [ "/home/user/cintsys" ]
+RUN printf '#!/bin/sh\n. $HOME/distribution/BCPL/cintcode/os/linux/setbcplenv && cintsys $@' > $HOME/cintsys && chmod +x $HOME/cintsys
+ENTRYPOINT [ "/bin/bash" ]
