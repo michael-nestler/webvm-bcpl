@@ -5,10 +5,10 @@ WORKDIR /root
 RUN apt-get clean && apt-get update && apt-get -y upgrade
 RUN apt-get -y install gcc build-essential curl
 
-# Steps described in Chapter 12 in the BCP manual https://www.cl.cam.ac.uk/~mr10/bcplman.pdf
+# Steps described in Chapter 12 in the BCPL manual https://www.cl.cam.ac.uk/~mr10/bcplman.pdf
 # Additionally, I'm adding a '-m32' flag to gcc just to be sure the resulting binary is i386 compatible
 RUN curl https://www.cl.cam.ac.uk/~mr10/BCPL/bcpl.tgz -o bcpl.tgz && mkdir -p distribution && tar zxvf bcpl.tgz -C distribution && rm bcpl.tgz
-RUN cd distribution/BCPL/cintcode && . ./os/linux/setbcplenv && sed -i '1s/^/CFLAGS+=-m32 \n/' Makefile && cat Makefile && make clean && make
+RUN cd distribution/BCPL/cintcode && . ./os/linux/setbcplenv && sed -i 's/march=native/march=pentium4/g' Makefile && cat Makefile && make clean && make
 
 FROM --platform=i386 i386/debian:buster
 
