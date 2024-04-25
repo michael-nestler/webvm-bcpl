@@ -12,7 +12,7 @@ RUN apt-get -y install gcc build-essential curl
 RUN curl https://www.cl.cam.ac.uk/~mr10/BCPL/bcpl.tgz -o /tmp/bcpl.tgz && mkdir -p $HOME/distribution && tar zxvf /tmp/bcpl.tgz -C $HOME/distribution
 RUN cd $HOME/distribution/BCPL/cintcode && . ./os/linux/setbcplenv && make CC="gcc -O4 -DforLinux -DCALLC -DCINTSYSyes -march=pentium4 -Wpedantic"
 
-FROM --platform=i386 i386/debian:buster
+FROM --platform=i386 i386/busybox
 
 ARG HOME
 WORKDIR $HOME
@@ -27,4 +27,4 @@ COPY --from=build $HOME/distribution/BCPL/cintcode/g $HOME/distribution/BCPL/cin
 COPY dockerfiles/cintsys.sh dockerfiles/convert-stdin-to-ocode.sh $HOME/
 
 RUN echo 'root:password' | chpasswd
-ENTRYPOINT [ "/bin/bash" ]
+ENTRYPOINT [ "/bin/sh" ]
