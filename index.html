@@ -46,10 +46,12 @@
 	</div>
 	<div style="flex-grow:0; flex-shrink: 0; height:1px; width: 100%; background-color: white;">
 	</div>
-	<main style="display: flex; flex-direction: row; justify-content: space-between; margin: 5px; height: 100%;">
-		<div style="flex-grow:1; height:100%;display:inline-block;margin:0;" class="scrollbar" id="console">
+	<main style="display: flex; flex-direction: column; justify-content: space-between; margin: 5px; height: 100%;">
+		<textarea style="flex: 1"></textarea>
+		<button type="button">Compile</button>
+		<div style="flex: 1" class="scrollbar" id="console">
 		</div>
-
+		<textarea style="flex: 1"></textarea>
 	</main>
 	<script>
 
