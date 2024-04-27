@@ -1,3 +1,0 @@
-#!/bin/bash
-
-docker run --platform i386 --rm -it --entrypoint sh $(docker build --platform i386 -q -f dockerfiles/bcpl .) $@

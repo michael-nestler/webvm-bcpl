@@ -94,7 +94,7 @@ jobs:
     env:
       TAG: "ext2-webvm-base-image" # Tag of docker image.
       IMAGE_SIZE: '${{ github.event.inputs.IMAGE_SIZE }}'
-      DEPLOY_DIR: /webvm_deploy/ # Path to directory where we host the final image from.
+      DEPLOY_DIR: webvm_deploy/ # Path to directory where we host the final image from.
 
     permissions: # Permissions to grant the GITHUB_TOKEN.
       contents: write  # Required permission to make a github release.
@@ -110,7 +110,7 @@ jobs:
           echo "IMAGE_NAME=$(basename ${{ github.event.inputs.DOCKERFILE_PATH }})_$(date +%Y%m%d)_${{ github.run_id }}.ext2" >> $GITHUB_ENV
 
       # Create directory to host the image from.
-      - run: sudo mkdir -p $DEPLOY_DIR
+      - run: mkdir -p $DEPLOY_DIR
 
       # Build the i386 Dockerfile image.
       - run: docker build . --tag $TAG --file ${{ github.event.inputs.DOCKERFILE_PATH }} --platform=i386
@@ -118,8 +118,7 @@ jobs:
       # Run the docker image so that we can export the container.
       # Run the Docker container with the Google Public DNS nameservers: 8.8.8.8, 8.8.4.4
       - run: |
-          docker run --dns 8.8.8.8 --dns 8.8.4.4 -d $TAG
-          echo "CONTAINER_ID=$(sudo docker ps -aq)" >> $GITHUB_ENV
+          echo "CONTAINER_ID=$(docker run --dns 8.8.8.8 --dns 8.8.4.4 -d $TAG)" >> $GITHUB_ENV
 
       # We extract the CMD, we first need to figure whether the Dockerfile uses CMD or an Entrypoint.
       - name: Extracting CMD / Entrypoint and args
@@ -149,9 +148,9 @@ jobs:
       - name: Create ext2 image.
         run: |
          # Preallocate space for the ext2 image
-         sudo fallocate -l $IMAGE_SIZE ${IMAGE_NAME}
+         fallocate -l $IMAGE_SIZE ${IMAGE_NAME}
          # Format to ext2 linux kernel revision 0
-         sudo mkfs.ext2 -r 0 ${IMAGE_NAME}
+         mkfs.ext2 -r 0 ${IMAGE_NAME}
          # Mount the ext2 image to modify it
          sudo mount -o loop -t ext2 ${IMAGE_NAME} /mnt/
 
@@ -164,28 +163,43 @@ jobs:
           sudo umount /mnt/
       # Result is an ext2 image for webvm.
 
+      # Generate .js file containg extracted image information
+      - name: Generate image-info.js
+        if: ${{ github.event.inputs.LOCAL_BUILD != 'true' }}
+        run: |
+          mkdir -p .build
+          echo 'window.imageInfo = {
+            imageUrl: "${{ env.IMAGE_NAME }}",
+            deviceType: "split",
+            cmd: ${{ env.CMD }},
+            env: ${{ env.ENV }},
+            args: ${{ env.ARGS }},
+            cwd: ${{ env.CWD }},
+          };' > .build/image-info.js
+
+      # Generate .js file containg extracted image information
+      - name: Generate image-info.js (local)
+        if: ${{ github.event.inputs.LOCAL_BUILD == 'true' }}
+        run: |
+          mkdir -p .build
+          echo 'window.imageInfo = {
+            imageUrl: ".build/${{ env.IMAGE_NAME}}",
+            deviceType: "bytes",
+            cmd: ${{ env.CMD }},
+            env: ${{ env.ENV }},
+            args: ${{ env.ARGS }},
+            cwd: ${{ env.CWD }},
+          };' > .build/image-info.js
+          cp .build/image-info.js image-info.js
+
       # Move required files for gh-pages deployment to the deployment directory $DEPLOY_DIR.
-      - run: sudo mv assets xterm favicon.ico index.html scrollbar.css serviceWorker.js $DEPLOY_DIR
+      - run: cp -r assets xterm favicon.ico index.html scrollbar.css serviceWorker.js .build $DEPLOY_DIR
       
       # The .txt suffix enabled HTTP compression for free
       - name: Generate image split chunks and .meta file
         run: |
           sudo split ${{ env.IMAGE_NAME }} ${{ env.DEPLOY_DIR }}/${{ env.IMAGE_NAME }}.c -a 6 -b 128k -x --additional-suffix=.txt
           sudo bash -c "stat -c%s ${{ env.IMAGE_NAME }} > ${{ env.DEPLOY_DIR }}/${{ env.IMAGE_NAME }}.meta"
-      # This step updates the default index.html file by performing the following actions:
-      #   1. Replaces all occurrences of IMAGE_URL with the URL to the image.
-      #   2. Replaces all occurrences of DEVICE_TYPE to bytes.
-      #   3. Replace CMD with the Dockerfile entry command.
-      #   4. Replace args with the Dockerfile CMD / Entrypoint args.
-      #   5. Replace ENV with the container's environment values.
-      - name: Adjust index.html
-        run: |
-          sudo sed -i 's#IMAGE_URL#"${{ env.IMAGE_NAME }}"#g' ${{ env.DEPLOY_DIR }}index.html
-          sudo sed -i 's#DEVICE_TYPE#"split"#g' ${{ env.DEPLOY_DIR }}index.html
-          sudo sed -i 's#CMD#${{ env.CMD }}#g' ${{ env.DEPLOY_DIR }}index.html
-          sudo sed -i 's#ARGS#${{ env.ARGS }}#g' ${{ env.DEPLOY_DIR }}index.html
-          sudo sed -i 's#ENV#${{ env.ENV }}#g' ${{ env.DEPLOY_DIR }}index.html
-          sudo sed -i 's#CWD#${{ env.CWD }}#g' ${{ env.DEPLOY_DIR }}index.html
 
       # We generate index.list files for our httpfs to function properly.
       - name: make index.list
@@ -203,6 +217,7 @@ jobs:
       # Create a gh-pages artifact in order to deploy to gh-pages.
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
+        if: ${{ github.event.inputs.DEPLOY_TO_GITHUB_PAGES == 'true' }}
         with:
           # Path of the directory containing the static assets for our gh pages deployment.
           path: ${{ env.DEPLOY_DIR }} # optional, default is _site/
@@ -216,6 +231,15 @@ jobs:
           fail_on_unmatched_files: 'true' # Fail in case of no matches with the file(s) glob(s).
           files: | # Assets to upload as release.
             ${{ env.IMAGE_NAME }}
+      
+      - name: github artifact # Used for local "act" workflow run
+        if: ${{ github.event.inputs.LOCAL_BUILD == 'true' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: local
+          path: |
+            ${{ env.IMAGE_NAME }}
+            image-info.js
 
   deploy_to_github_pages: # Job that deploys the github-pages artifact to github-pages.
     if: ${{ github.event.inputs.DEPLOY_TO_GITHUB_PAGES == 'true' }}

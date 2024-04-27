@@ -1,0 +1,7 @@
+#!/bin/bash
+
+rm -rf .build
+act
+mv .build/1/local/* .build/
+rename 's/\.gz__$/\.gz/' .build/*.gz__
+gunzip .build/*.gz

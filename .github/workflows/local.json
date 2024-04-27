@@ -1,0 +1,9 @@
+{
+    "inputs": {
+      "DOCKERFILE_PATH": "dockerfiles/bcpl",
+      "IMAGE_SIZE": "50M",
+      "DEPLOY_TO_GITHUB_PAGES": "false",
+      "GITHUB_RELEASE": "false",
+      "LOCAL_BUILD": "true"
+    }
+}

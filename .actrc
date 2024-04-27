@@ -1,0 +1,4 @@
+--action-offline-mode 
+--artifact-server-path .build 
+--eventpath .github/workflows/local.json
+--container-options --privileged 
