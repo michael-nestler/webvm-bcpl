@@ -124,25 +124,25 @@ jobs:
       - name: Extracting CMD / Entrypoint and args
         shell: bash
         run: |
-          cmd=$(sudo docker inspect --format='{{json .Config.Cmd}}' $CONTAINER_ID)
-          entrypoint=$(sudo docker inspect --format='{{json .Config.Entrypoint}}' $CONTAINER_ID)
+          cmd=$(docker inspect --format='{{json .Config.Cmd}}' $CONTAINER_ID)
+          entrypoint=$(docker inspect --format='{{json .Config.Entrypoint}}' $CONTAINER_ID)
           if [[ $entrypoint != "null" && $cmd != "null" ]]; then
-            echo "CMD=$( sudo docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.Entrypoint' )" >> $GITHUB_ENV
-            echo "ARGS=$( sudo docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.Cmd' )" >> $GITHUB_ENV
+            echo "CMD=$(docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.Entrypoint')" >> $GITHUB_ENV
+            echo "ARGS=$(docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.Cmd')" >> $GITHUB_ENV
           elif [[ $cmd != "null" ]]; then
-            echo "CMD=$( sudo docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.Cmd[:1]' )" >> $GITHUB_ENV
-            echo "ARGS=$( sudo docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.Cmd[1:]' )" >> $GITHUB_ENV
+            echo "CMD=$(docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.Cmd[:1]')" >> $GITHUB_ENV
+            echo "ARGS=$(docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.Cmd[1:]')" >> $GITHUB_ENV
           else
-            echo "CMD=$( sudo docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.Entrypoint[:1]' )" >> $GITHUB_ENV
-            echo "ARGS=$( sudo docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.Entrypoint[1:]' )" >> $GITHUB_ENV
+            echo "CMD=$(docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.Entrypoint[:1]')" >> $GITHUB_ENV
+            echo "ARGS=$(docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.Entrypoint[1:]')" >> $GITHUB_ENV
           fi
 
       # We extract the ENV, CMD/Entrypoint and cwd from the Docker container with docker inspect.
       - name: Extracting env, args and cwd.
         shell: bash
         run: |
-          echo "ENV=$( sudo docker inspect $CONTAINER_ID | jq --compact-output  '.[0].Config.Env' )" >> $GITHUB_ENV
-          echo "CWD=$( sudo docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.WorkingDir' )" >> $GITHUB_ENV
+          echo "ENV=$(docker inspect $CONTAINER_ID | jq --compact-output  '.[0].Config.Env')" >> $GITHUB_ENV
+          echo "CWD=$(docker inspect $CONTAINER_ID | jq --compact-output '.[0].Config.WorkingDir')" >> $GITHUB_ENV
 
       # We create and mount the base ext2 image to extract the Docker container's filesystem its contents into.
       - name: Create ext2 image.
@@ -151,6 +151,7 @@ jobs:
          fallocate -l $IMAGE_SIZE ${IMAGE_NAME}
          # Format to ext2 linux kernel revision 0
          mkfs.ext2 -r 0 ${IMAGE_NAME}
+
          # Mount the ext2 image to modify it
          sudo mount -o loop -t ext2 ${IMAGE_NAME} /mnt/
 
@@ -198,8 +199,8 @@ jobs:
       # The .txt suffix enabled HTTP compression for free
       - name: Generate image split chunks and .meta file
         run: |
-          sudo split ${{ env.IMAGE_NAME }} ${{ env.DEPLOY_DIR }}/${{ env.IMAGE_NAME }}.c -a 6 -b 128k -x --additional-suffix=.txt
-          sudo bash -c "stat -c%s ${{ env.IMAGE_NAME }} > ${{ env.DEPLOY_DIR }}/${{ env.IMAGE_NAME }}.meta"
+          split ${{ env.IMAGE_NAME }} ${{ env.DEPLOY_DIR }}/${{ env.IMAGE_NAME }}.c -a 6 -b 128k -x --additional-suffix=.txt
+          bash -c "stat -c%s ${{ env.IMAGE_NAME }} > ${{ env.DEPLOY_DIR }}/${{ env.IMAGE_NAME }}.meta"
 
       # We generate index.list files for our httpfs to function properly.
       - name: make index.list
@@ -208,10 +209,10 @@ jobs:
           find $DEPLOY_DIR -type d | while read -r dir;
           do
             index_list="$dir/index.list";
-            sudo rm -f "$index_list";
-            sudo ls "$dir" | sudo tee "$index_list" > /dev/null;
-            sudo chmod +rw "$index_list";     
-            sudo echo "created $index_list"; 
+            rm -f "$index_list";
+            ls "$dir" | tee "$index_list" > /dev/null;
+            chmod +rw "$index_list";     
+            echo "created $index_list"; 
           done
 
       # Create a gh-pages artifact in order to deploy to gh-pages.
