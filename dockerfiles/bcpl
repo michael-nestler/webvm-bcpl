@@ -24,7 +24,7 @@ COPY --from=build $HOME/distribution/BCPL/cintcode/cin $HOME/distribution/BCPL/c
 COPY --from=build $HOME/distribution/BCPL/cintcode/com $HOME/distribution/BCPL/cintcode/com
 COPY --from=build $HOME/distribution/BCPL/cintcode/g $HOME/distribution/BCPL/cintcode/g
 
-COPY dockerfiles/cintsys.sh dockerfiles/convert-stdin-to-ocode.sh $HOME/
+COPY dockerfiles/cintsys.sh dockerfiles/convert-bcpl-to-ocode.sh $HOME/
 
 RUN echo 'root:password' | chpasswd
 ENTRYPOINT [ "/bin/sh" ]
