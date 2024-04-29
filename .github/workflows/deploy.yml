@@ -194,7 +194,7 @@ jobs:
           cp .build/image-info.js image-info.js
 
       # Move required files for gh-pages deployment to the deployment directory $DEPLOY_DIR.
-      - run: cp -r assets xterm favicon.ico index.html scrollbar.css serviceWorker.js .build $DEPLOY_DIR
+      - run: cp -r assets xterm favicon.ico index.html embeddable-bcpl.html scrollbar.css serviceWorker.js .build $DEPLOY_DIR
       
       # The .txt suffix enabled HTTP compression for free
       - name: Generate image split chunks and .meta file

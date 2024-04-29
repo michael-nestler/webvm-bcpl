@@ -1,4 +1,5 @@
 .scrollbar {
+  max-height: 100%;
   scrollbar-color: #777 #0000;
 }
 
