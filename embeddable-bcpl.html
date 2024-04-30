@@ -150,15 +150,11 @@
 				printOnTerm.printMessage(["Ready."]);
 
 				const decoder = new TextDecoder("utf-8");
-				let sampling = false;
 				let sampledString = "";
 
 				cxReadFunc = cx.setCustomConsole(function writeData(buf) {
-					if (sampling) {
 						sampledString += decoder.decode(buf);
-					} else {
 						term.write(new Uint8Array(buf));
-					}
 				}, term.cols, term.rows);
 
 				function preventDefaults(e) {
@@ -189,14 +185,15 @@
 								case "compile":
 									window.top.postMessage({ type: "loading" });
 									console.log("Compiling", message.data);
-									const success = await cxLogAndRun(cx, "/bin/sh", ['./convert-bcpl-to-ocode.sh', message.data.code]);
-									if (success) {
+									sampledString = "";
+									const failed = await cxLogAndRun(cx, "/bin/sh", ['./convert-bcpl-to-ocode.sh', message.data.code]);
+									if (!failed) {
 										sampledString = "";
-										sampling = true;
 										await cxLogAndRun(cx, "/bin/cat", ['/tmp/ocode.txt']);
-										sampling = false;
 										console.log("Compilation result", sampledString);
 										window.top.postMessage({ type: "compilation-result", result: sampledString });
+									} else {
+										console.log("Failed compilation", sampledString);
 									}
 									window.top.postMessage({ type: "ready" });
 									return;
